@@ -39,6 +39,32 @@ metadata *request_space(size_t size)
     return block;
 }
 
+void see_list(void)
+{
+    metadata *p = startBlock;
+}
+void split_block(metadata *block, size_t size)
+{
+    if(block->size - size < 0)
+        return;
+    size_t smallSize = block->size - size;
+    block->free = 0;
+    block->size = size;
+    metadata *newBlock = (metadata *)((char *)(block + 1) + size);
+    newBlock->size = smallSize;
+    newBlock->free = 1;
+    if(block->next == NULL)
+    {
+        block->next = newBlock;
+        newBlock->next = NULL;
+    }
+    else
+    {
+        newBlock->next = block->next;
+        block->next = newBlock;
+    }
+    see_list();
+}
 void *smalloc(size_t size)
 {
     if(size <= 0)
@@ -54,7 +80,12 @@ void *smalloc(size_t size)
     {
         metadata *block = get_free_block(size);
         if(block != NULL)
-            block->free = 0;
+        {
+            if(size == block->size)
+                block->free = 0;
+            else if(size < block->size)
+                split_block(block, size);
+        }
         else
         {
            block = request_space(size); 
