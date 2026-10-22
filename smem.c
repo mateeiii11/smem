@@ -11,9 +11,9 @@ metadata *startBlock = NULL;
 metadata *get_free_block(size_t size)
 {
     metadata *block = startBlock; 
-    while(block != NULL)
+    while(block != NULL) 
     {
-        if(block->size >= size && block->free == 1)
+        if(block->size >= size + METADATA_SIZE && block->free == 1)
             return block;
         block = block->next;
     }
@@ -41,17 +41,38 @@ metadata *request_space(size_t size)
 
 void see_list(void)
 {
+    printf("%p ", startBlock);
     metadata *p = startBlock;
+    while(p != NULL)
+    {
+        printf("%p ", p);
+        p = p->next;
+    }
+    printf("\n");
+
 }
+/*
+ * |60| -> 84
+ * |35| -> 59 
+ *
+ * |35| -> 59 
+ * |25| -> 49 
+ *
+ *
+ *
+ * |120| -> 144
+ * |20| -> 44
+ *
+ * |20| -> 44
+ * |100| -> 124
+ * */
 void split_block(metadata *block, size_t size)
 {
-    if(block->size - size < 0)
-        return;
     size_t smallSize = block->size - size;
     block->free = 0;
     block->size = size;
     metadata *newBlock = (metadata *)((char *)(block + 1) + size);
-    newBlock->size = smallSize;
+    newBlock->size = smallSize; 
     newBlock->free = 1;
     if(block->next == NULL)
     {
@@ -60,10 +81,10 @@ void split_block(metadata *block, size_t size)
     }
     else
     {
-        newBlock->next = block->next;
+        metadata *temp = block->next;
         block->next = newBlock;
+        newBlock->next = temp; 
     }
-    see_list();
 }
 void *smalloc(size_t size)
 {
@@ -83,7 +104,7 @@ void *smalloc(size_t size)
         {
             if(size == block->size)
                 block->free = 0;
-            else if(size < block->size)
+            else if(size + 2 * METADATA_SIZE < block->size)
                 split_block(block, size);
         }
         else
@@ -96,7 +117,6 @@ void *smalloc(size_t size)
         }
         return (block + 1);
     }
-    
 }
 
 void sfree(void *p)
