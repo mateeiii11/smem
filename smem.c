@@ -86,6 +86,56 @@ void split_block(metadata *block, size_t size)
         newBlock->next = temp; 
     }
 }
+void merge_blocks(void)
+{
+    /*
+     * |10|->|30|->|42| |120|->NULL
+     *        f            f  ^
+     *                        |
+     *               ---------- 
+     * |10|->|150|->|42|->NULL
+     *        f             
+     *
+     */
+    metadata *temp = startBlock;
+    metadata *bigBlock = NULL;
+    while(temp != NULL)
+    {
+        if(temp->free == 1)
+        {
+            bigBlock = temp;
+            break;
+        }
+        temp = temp->next;
+    }
+    while(1)
+    {
+        see_list();
+        int freecnt = 0;
+        metadata *buffer = startBlock;
+        while(buffer != NULL)
+        {
+            if(buffer->free == 1)
+                freecnt++;
+            buffer = buffer->next;
+        }
+        if(freecnt < 2) 
+            return;
+
+        metadata *block = bigBlock->next;
+        while(block != NULL && block->free == 0)
+            block = block->next;
+
+        metadata *beforeBlock = bigBlock;
+        while(beforeBlock != NULL && beforeBlock->next != block)
+            beforeBlock = beforeBlock->next;
+
+        bigBlock->size += block->size;
+        block->size = 0;
+        block->free = 0;
+        beforeBlock->next = block->next;    
+    }
+}
 void *smalloc(size_t size)
 {
     if(size <= 0)
@@ -97,7 +147,7 @@ void *smalloc(size_t size)
             return NULL;
         return (startBlock + 1);
     }
-    else
+   else
     {
         metadata *block = get_free_block(size);
         if(block != NULL)
@@ -125,6 +175,7 @@ void sfree(void *p)
         return;
     metadata *block = ((metadata *)p - 1);
     block->free = 1;
+    merge_blocks();
 }
 
 void *scalloc(size_t num, size_t size)
