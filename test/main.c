@@ -14,8 +14,6 @@ int main(void)
     memset(b, 'B', 40);
     memset(c, 'C', 40);
 
-    see_list();
-
     sfree(b);
     sfree(a);
     sfree(c);
